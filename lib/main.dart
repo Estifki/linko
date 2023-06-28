@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:linko/controller/data.dart';
 import 'package:linko/widget/home_top.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:vibration/vibration.dart';
 
 void main() {
   runApp(const MyApp());
@@ -11,6 +13,7 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    Vibration.vibrate(duration: 400);
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: ThemeData(scaffoldBackgroundColor: Colors.white),
@@ -28,7 +31,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   List<DummyData> searchDatas = [];
-  TextEditingController _searchcontroller = TextEditingController();
+  final TextEditingController _searchcontroller = TextEditingController();
   String searchedText = "";
 
   @override
@@ -44,6 +47,13 @@ class _HomeScreenState extends State<HomeScreen> {
             //Home Top Bar
             //
             const HomeTopWidget(),
+            const SizedBox(height: 10),
+            searchedText.isNotEmpty
+                ? Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 15),
+                    child: SearchedQueryWidget(searchedText: searchedText),
+                  )
+                : const Text(""),
             Expanded(
                 child: searchDatas.isEmpty
                     ? Container(
@@ -54,19 +64,13 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       )
                     : Padding(
-                        padding:
-                            const EdgeInsets.only(left: 15, right: 15, top: 10),
+                        padding: const EdgeInsets.symmetric(horizontal: 15),
                         child: ListView.builder(
                           shrinkWrap: true,
-                          itemCount: searchDatas.length + 1,
+                          itemCount: searchDatas.length,
                           itemBuilder: (context, index) {
-                            if (index == 0) {
-                              return SearchedQueryWidget(
-                                  searchedText: searchedText);
-                            } else {
-                              final searchIndex = index - 1;
-                              return ProductsWidget(searchDatas: searchDatas, searchIndex: searchIndex);
-                            }
+                            return ProductsWidget(
+                                searchDatas: searchDatas, index: index);
                           },
                         ),
                       )),
@@ -135,92 +139,98 @@ class ProductsWidget extends StatelessWidget {
   const ProductsWidget({
     super.key,
     required this.searchDatas,
-    required this.searchIndex,
+    required this.index,
   });
 
   final List<DummyData> searchDatas;
-  final int searchIndex;
+  final int index;
+
+  Future<void> _makePhoneCall(String phoneNumber) async {
+    final Uri launchUri = Uri(
+      scheme: 'tel',
+      path: phoneNumber,
+    );
+    await launchUrl(launchUri);
+  }
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding:
-          const EdgeInsets.symmetric(vertical: 10),
+      padding: const EdgeInsets.symmetric(vertical: 10),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ImageWidget(searchDatas: searchDatas, searchIndex: searchIndex),
+          ImageWidget(searchDatas: searchDatas, searchIndex: index),
           const SizedBox(height: 10),
           Row(
-            mainAxisAlignment:
-                MainAxisAlignment.spaceBetween,
-            crossAxisAlignment:
-                CrossAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Row(
-                mainAxisAlignment:
-                    MainAxisAlignment.start,
-                crossAxisAlignment:
-                    CrossAxisAlignment.center,
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Text(
-                    searchDatas[searchIndex].name,
-                    style:
-                        const TextStyle(fontSize: 17),
+                    searchDatas[index].name,
+                    style: const TextStyle(fontSize: 17),
                   ),
                   const SizedBox(width: 15),
                   Container(
                     decoration: BoxDecoration(
-                        color: Colors.pink
-                            .withOpacity(0.1),
-                        borderRadius:
-                            BorderRadius.circular(
-                                10.0)),
+                        color: Colors.pink.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(10.0)),
                     child: const Padding(
                       padding: EdgeInsets.only(
-                          left: 8.0,
-                          right: 8,
-                          top: 4,
-                          bottom: 4),
+                          left: 8.0, right: 8, top: 4, bottom: 4),
                       child: Text(
                         "offer %",
                         style: TextStyle(
                             fontSize: 13,
                             color: Colors.pink,
-                            fontWeight:
-                                FontWeight.bold),
+                            fontWeight: FontWeight.bold),
                       ),
                     ),
                   )
                 ],
               ),
-              Container(
-                height: 35,
-                width: 90,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                    borderRadius:
-                        BorderRadius.circular(6.0),
-                    border: Border.all(
-                        color: Colors.pink)),
-                child: const Text("CALL "),
+              GestureDetector(
+                onTap: () => _makePhoneCall(searchDatas[index].phone),
+                child: Container(
+                  height: 30,
+                  width: 84,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(6.0),
+                      border: Border.all(color: Colors.pink)),
+                  child: const Text("CALL "),
+                ),
               )
             ],
           ),
           const SizedBox(height: 5),
           Row(
+            mainAxisAlignment: MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
+              Icon(Icons.av_timer,
+                  size: 20, color: Colors.grey.withOpacity(0.6)),
+              const SizedBox(width: 6),
               Text(
-                searchDatas[searchIndex].deliveryTime,
+                searchDatas[index].deliveryTime,
               ),
               const SizedBox(width: 15),
-              const Text(
-                "",
+              Container(
+                height: 4,
+                width: 4,
+                decoration: BoxDecoration(color: Colors.grey.withOpacity(0.6)),
               ),
               const SizedBox(width: 15),
+              Icon(Icons.delivery_dining,
+                  size: 20, color: Colors.grey.withOpacity(0.6)),
+              const SizedBox(width: 6),
               Text(
-                searchDatas[searchIndex].price,
+                searchDatas[index].price,
               )
             ],
           )
@@ -247,12 +257,9 @@ class ImageWidget extends StatelessWidget {
         height: 160,
         decoration: BoxDecoration(
           color: Colors.grey.shade100,
-          borderRadius:
-              BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(16),
           image: DecorationImage(
-              image: AssetImage(
-                  searchDatas[searchIndex]
-                      .image),
+              image: AssetImage(searchDatas[searchIndex].image),
               fit: BoxFit.cover),
         ),
       ),
@@ -264,11 +271,8 @@ class ImageWidget extends StatelessWidget {
             width: 38,
             alignment: Alignment.center,
             decoration: const BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle),
-            child: const Icon(
-                Icons.favorite_outline,
-                size: 20),
+                color: Colors.white, shape: BoxShape.circle),
+            child: const Icon(Icons.favorite_outline, size: 20),
           ))
     ]);
   }
@@ -287,7 +291,7 @@ class SearchedQueryWidget extends StatelessWidget {
     return Container(
         height: 66,
         width: MediaQuery.of(context).size.width,
-        margin: const EdgeInsets.only(bottom: 15),
+        margin: const EdgeInsets.only(bottom: 10),
         decoration: BoxDecoration(
             color: Colors.grey.shade50,
             borderRadius: BorderRadius.circular(10)),
